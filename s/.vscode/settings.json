@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.ino": "arduino",
+        "netdb.h": "c"
+    }
+}

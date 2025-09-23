@@ -1,0 +1,21 @@
+
+linha coluna
+  i     j
+
+pra direita: i mantem, j++
+pra esquerda: i mantem, j--
+pra cima: i--, j mantem
+pra baixo: i++, j mantem 
+
+  printf("linha: %d\n", x);
+    printf("coluna: %d\n", numero_maximo_colunas);
+      
+
+    for (int i = 0; i < x; i++)
+    {
+        for (int j = 0; j < numero_maximo_colunas; j++)
+        {
+            printf("%c", mapa[i][j]);
+        }
+        printf("\n");
+    }

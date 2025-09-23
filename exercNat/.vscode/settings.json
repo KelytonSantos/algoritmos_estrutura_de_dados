@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.ino": "arduino",
+        "stdlib.h": "c"
+    }
+}
