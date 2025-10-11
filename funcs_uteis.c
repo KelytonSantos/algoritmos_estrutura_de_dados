@@ -46,9 +46,9 @@ int binary_search(int *v, int indice_esquerdo, int indice_direito, int x)
         int m = (indice_esquerdo + indice_direito) / 2;
 
         if (v[m] >= x)
-            binary_search(v, indice_esquerdo, m, x);
+            return binary_search(v, indice_esquerdo, m, x);
         else
-            binary_search(v, m, indice_direito, x);
+            return binary_search(v, m, indice_direito, x);
     }
     return indice_direito;
 }

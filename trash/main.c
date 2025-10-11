@@ -1,15 +1,26 @@
+
 #include <stdio.h>
 
 int main()
 {
-    int n = 10;
+    float value_bank = 0, buy_value = 0;
 
-    int *p = &n;
+    printf("Qual saldo da sua conta bancaria: ");
+    scanf("%f", &value_bank);
+    printf("Qual valor da compra: ");
+    scanf("%f", &buy_value);
 
-    printf("%p\n", (void *)p);
-    printf("%d\n", *p);
-    printf("%p\n", &n);
-    printf("%p\n", (void *)&p);
+    if (value_bank >= buy_value)
+    {
+        printf("Compra autorizada");
+    }
+    else
+    {
+        printf("Compra nao autorizada");
+    }
+
+    printf("%.2f\n", value_bank);
+    printf("%.2f\n", buy_value);
 
     return 0;
 }
