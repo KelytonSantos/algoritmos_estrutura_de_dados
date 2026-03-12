@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.ino": "arduino",
-        "stdlib.h": "c"
+        "stdio.h": "c",
+        "lista_encadeada.h": "c"
     }
 }

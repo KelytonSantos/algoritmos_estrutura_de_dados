@@ -1,6 +1,10 @@
 /*
 
 Métodos numericos para Engenharia
+
+Lucas X - Métodos Intercalares
+          Método da Bissecção
+
     Método para encontrar as raizes de uma equação: Escolhe-se um intervalo [a, b] onde f(a)*f(b) < 0 (valores negativos)
     Ou seja a função tem valores opostos nos extremos. Pelo teorema do valor intermediario, existe pelo menos uma raiz entre a e b
 

@@ -46,7 +46,7 @@ int main()
         {
             printf("%d %d\n", chars[i], freq[chars[i]]);
         }
-        printf("\n"); // Blank line between outputs
+        printf("\n");
     }
     return 0;
 }
