@@ -1,0 +1,202 @@
+================================================================================
+                      GUIA DE DEBUG - ÁRVORE RUBRO-NEGRA
+                              Data: 30/04/2026
+================================================================================
+
+## PROBLEMA ENCONTRADO:
+AddressSanitizer detectou SEGV (Segmentation Fault) ao chamar a função remover()
+Erro: DEADLYSIGNAL em sobe_cor() na linha 84 ao tentar acessar raiz->esq ou raiz->dir
+
+
+## PASSO 1: COMPILAR COM ADDRESSANITIZER
+================================================================================
+
+Comando:
+  cc -std=c11 -Wall -Wextra -pedantic -fsanitize=address -g \
+     "arvore_bin_balanceada/arvoreBalanceada.c" \
+     "arvore_bin_balanceada/main.c" \
+     -o "arvore_bin_balanceada/demo_asan"
+
+Explicação:
+  -fsanitize=address  : Ativa AddressSanitizer para detectar erros de memória
+  -g                  : Inclui símbolos de debug (nomes de funções e linhas)
+  -Wall -Wextra       : Todos os warnings (boa prática)
+  -pedantic           : Conformidade padrão C
+
+
+## PASSO 2: EXECUTAR E CAPTURAR OUTPUT
+================================================================================
+
+Comando:
+  ./arvore_bin_balanceada/demo_asan
+
+Output do Erro:
+  Arvore apos insercoes em ordem: 1(vermelho) 2(preto) 3(vermelho) 4(preto) 5(preto) 7(vermelho) 10(preto)
+  Busca 10: encontrado em no com cor preto
+  Busca 99: nao encontrado
+  AddressSanitizer:DEADLYSIGNAL
+  ==27906==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000014
+
+
+## PASSO 3: ANALISAR A STACK TRACE
+================================================================================
+
+Stack trace (de cima para baixo = chamada mais recente primeiro):
+
+    #0 0x649c929ab7ac in sobe_cor arvore_bin_balanceada/arvoreBalanceada.c:84
+    #1 0x649c929abf38 in move_vermelho_a_direita arvore_bin_balanceada/arvoreBalanceada.c:174
+    #2 0x649c929ac47a in remover arvore_bin_balanceada/arvoreBalanceada.c:239
+    #3 0x649c929ac60d in remover arvore_bin_balanceada/arvoreBalanceada.c:249
+    #4 0x649c929ac2d0 in remover arvore_bin_balanceada/arvoreBalanceada.c:222
+    #5 0x649c929acc3d in main arvore_bin_balanceada/main.c:57
+
+Interpretação:
+  - #0 (CRASH): sobe_cor() linha 84
+  - #1: chamada de move_vermelho_a_direita() linha 174
+  - #2: chamada de remover() linha 239
+  - #3: outra chamada de remover() linha 249 (recursão)
+  - #4: outra chamada de remover() linha 222 (recursão)
+  - #5: main() linha 57
+
+Caminho: main → remover → remover (recursão) → move_vermelho_a_direita → sobe_cor → CRASH
+
+
+## PASSO 4: LOCALIZAAR A LINHA PROBLEMÁTICA
+================================================================================
+
+Arquivo: arvoreBalanceada.c
+Linha 84 (função sobe_cor):
+
+  void sobe_cor(Celula *raiz)
+  {
+      raiz->cor = VERMELHO;
+      raiz->esq->cor = raiz->dir->cor = PRETO;  // <-- LINHA 84: CRASH AQUI
+  }
+
+Problema: raiz->esq ou raiz->dir é NULL
+Resultado: tentar escrever em NULL → SEGFAULT
+
+
+## PASSO 5: RASTREAR A CHAMADA PROBLEMÁTICA
+================================================================================
+
+Arquivo: arvoreBalanceada.c
+Linha 174 (função move_vermelho_a_direita):
+
+  static Celula *move_vermelho_a_direita(Celula *raiz)
+  {
+      sobe_cor(raiz);  // <-- LINHA 174: CHAMADA SEM VALIDAÇÃO
+      
+      if (raiz->esq != NULL && eh_vermelho(raiz->esq->esq))
+      {
+          raiz = rotacao_a_direita(raiz);
+          sobe_cor(raiz);  // <-- Essa SIM tem validação implícita (rotacao já garante)
+      }
+      
+      return raiz;
+  }
+
+Achado: A função chama sobe_cor() ANTES de validar se raiz->esq existe!
+Note que depois ela verifica "if (raiz->esq != NULL..." - deveria ter feito antes.
+
+
+## PASSO 6: IDENTIFICAR A CORREÇÃO
+================================================================================
+
+Solução: Adicionar guard (proteção) no início de move_vermelho_a_direita():
+
+  ANTES:
+    static Celula *move_vermelho_a_direita(Celula *raiz)
+    {
+        sobe_cor(raiz);
+        ...
+    }
+
+  DEPOIS:
+    static Celula *move_vermelho_a_direita(Celula *raiz)
+    {
+        if (raiz == NULL || raiz->esq == NULL)  // <-- GUARD ADICIONADO
+            return raiz;
+        
+        sobe_cor(raiz);
+        ...
+    }
+
+Mesma correção foi aplicada em move_vermelho_a_esquerda():
+
+    if (raiz == NULL || raiz->dir == NULL)
+        return raiz;
+
+
+## PASSO 7: RECOMPILAR E TESTAR (COMANDO FINAL QUE FUNCIONA)
+================================================================================
+
+Comando que FUNCIONA (compila + executa):
+  cc -std=c11 -Wall -Wextra -pedantic \
+     "arvore_bin_balanceada/arvoreBalanceada.c" \
+     "arvore_bin_balanceada/main.c" \
+     -o "arvore_bin_balanceada/demo" && \
+     "./arvore_bin_balanceada/demo"
+
+Output esperado (SEM ERRO):
+  Arvore apos insercoes em ordem: 1(vermelho) 2(preto) 3(vermelho) 4(preto) 5(preto) 7(vermelho) 10(preto)
+  Busca 10: encontrado em no com cor preto
+  Busca 99: nao encontrado
+
+  Removendo 4...
+  Arvore apos remover 4 em ordem: 1(preto) 2(vermelho) 3(preto) 5(preto) 7(vermelho) 10(preto)
+  Busca 4 apos remover: nao encontrado
+
+  Removendo 2...
+  Arvore apos remover 2 em ordem: 1(preto) 3(vermelho) 5(preto) 7(vermelho) 10(preto)
+
+
+## RESUMO - COMO REPLICAR PARA FUTUROS ERROS
+================================================================================
+
+1. COMPILAR COM SANITIZER:
+   cc -fsanitize=address -g seu_programa.c outro.c -o seu_programa
+
+2. EXECUTAR:
+   ./seu_programa
+
+3. LER O OUTPUT:
+   - Procure por "ERROR: AddressSanitizer:" 
+   - Anote o tipo (SEGV, heap-buffer-overflow, etc)
+   - Anote o endereço inválido
+
+4. ANALISAR STACK TRACE:
+   - Frame #0 = onde crashou (mais importante)
+   - Frames abaixo = quem chamou
+   - Leia de cima para baixo
+
+5. ABRIR O CÓDIGO NA LINHA INDICADA:
+   - Procure por dereferences: ->, *, []
+   - Procure por ponteiros não validados
+
+6. TRAÇAR DE VOLTA:
+   - Se o erro está numa função helper, veja quem a chamou
+   - Validate antes de chamar, não dentro
+
+7. APLICAR FIX:
+   - Adicione checks "if (pointer != NULL)" ou "if (pointer == NULL) return"
+   - Recompile e teste
+
+8. VERIFICAR COM SANITIZER (opcional mas recomendado):
+   cc -fsanitize=address -g seu_programa.c outro.c -o seu_programa_asan && ./seu_programa_asan
+
+
+## DICA EXTRA: VARIÁVEIS DE AMBIENTE
+================================================================================
+
+Para mais detalhes no output do ASAN:
+
+  export ASAN_OPTIONS=verbosity=2:halt_on_error=1
+  ./seu_programa
+
+Isso fará ASAN imprimir mais informações e parar no primeiro erro.
+
+
+================================================================================
+                            FIM DO DOCUMENTO
+================================================================================
