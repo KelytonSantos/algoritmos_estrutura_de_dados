@@ -1,15 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "arvore.h"
 // arvore binaria de busca sem balanceamento
-
-typedef struct celula
-{
-
-    struct celula *dir;
-    struct celula *esq;
-    int dado;
-
-} Celula;
 
 Celula *buscar(Celula *raiz, int x)
 {
